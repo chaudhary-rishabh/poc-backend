@@ -1,5 +1,8 @@
 import base64
+import ssl
 
+import httpx
+import truststore
 from anthropic import AsyncAnthropic
 
 from app.core.config import settings
@@ -16,7 +19,9 @@ _MODEL = "claude-sonnet-4-5"
 
 class AnthropicProvider:
     def __init__(self) -> None:
-        self._client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        http_client = httpx.AsyncClient(verify=ssl_context)
+        self._client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY, http_client=http_client)
 
     async def complete(self, system_prompt: str, user_content: str) -> str:
         system = system_prompt + _JSON_ONLY_INSTRUCTION
