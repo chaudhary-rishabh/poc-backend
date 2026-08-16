@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>__APP_TITLE__</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f5f6f8; color: #1a1a1a; }
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: #1a1f2b; color: #fff; padding: 20px 0; flex-shrink: 0; }
+  .sidebar h1 { font-size: 16px; padding: 0 20px 16px; }
+  .sidebar nav a { display: block; padding: 10px 20px; color: #c7ccd6; text-decoration: none; cursor: pointer; }
+  .sidebar nav a.active, .sidebar nav a:hover { background: #2a3142; color: #fff; }
+  .main { flex: 1; padding: 24px 32px; }
+  .role-switch { margin-bottom: 16px; font-size: 13px; }
+  .role-switch select { padding: 4px 8px; }
+  h2 { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; background: #fff; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+  th { background: #fafbfc; font-weight: 600; }
+  .btn { padding: 8px 14px; background: #2f6fed; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .btn.secondary { background: #e5e7eb; color: #1a1a1a; }
+  .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; }
+  .field input, .field textarea, .field select { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+/* __ROLES__ */
+const ROLES = __ROLES_JSON__;
+
+/* __SCREENS__ */
+const SCREENS = __SCREENS_JSON__;
+
+/* __FEATURES__ */
+const FEATURES = __FEATURES_JSON__;
+
+function ListView({ screen }) {
+  const [items, setItems] = useState(
+    Array.from({ length: 5 }).map((_, i) => ({ id: i + 1, name: `${screen.name} item ${i + 1}` }))
+  );
+  return (
+    <div>
+      <div className="toolbar">
+        <h2>{screen.name}</h2>
+        <button className="btn">+ New</button>
+      </div>
+      <p>{screen.purpose}</p>
+      <table>
+        <thead>
+          <tr>{(screen.key_elements || ["Name"]).map((k) => <th key={k}>{k}</th>)}</tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              {(screen.key_elements || ["Name"]).map((k) => <td key={k}>{item.name} — {k}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FormView({ screen }) {
+  return (
+    <div className="card">
+      <h2>{screen.name}</h2>
+      <p>{screen.purpose}</p>
+      {(screen.key_elements || ["Field"]).map((k) => (
+        <div className="field" key={k}>
+          <label>{k}</label>
+          <input type="text" placeholder={k} />
+        </div>
+      ))}
+      <button className="btn">Save</button>
+      <button className="btn secondary" style={{ marginLeft: 8 }}>Cancel</button>
+    </div>
+  );
+}
+
+function DetailView({ screen }) {
+  return (
+    <div className="card">
+      <h2>{screen.name}</h2>
+      <p>{screen.purpose}</p>
+      {(screen.key_elements || ["Detail"]).map((k) => (
+        <div className="field" key={k}>
+          <label>{k}</label>
+          <div>{k} value</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function screenComponent(screen, index) {
+  const kind = index % 3 === 0 ? "list" : index % 3 === 1 ? "form" : "detail";
+  if (kind === "list") return <ListView screen={screen} />;
+  if (kind === "form") return <FormView screen={screen} />;
+  return <DetailView screen={screen} />;
+}
+
+function App() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [role, setRole] = useState(ROLES[0]?.name || "");
+  const activeScreen = SCREENS[activeIndex] || { name: "No screens", purpose: "", key_elements: [] };
+
+  return (
+    <div className="app-shell">
+      <div className="sidebar">
+        <h1>__APP_TITLE__</h1>
+        <nav>
+          {SCREENS.map((s, i) => (
+            <a
+              key={s.name}
+              className={i === activeIndex ? "active" : ""}
+              onClick={() => setActiveIndex(i)}
+            >
+              {s.name}
+            </a>
+          ))}
+        </nav>
+      </div>
+      <div className="main">
+        <div className="role-switch">
+          Role:{" "}
+          <select value={role} onChange={(e) => setRole(e.target.value)}>
+            {ROLES.map((r) => (
+              <option key={r.name} value={r.name}>{r.name}</option>
+            ))}
+          </select>
+        </div>
+        {screenComponent(activeScreen, activeIndex)}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
