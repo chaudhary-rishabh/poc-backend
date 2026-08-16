@@ -123,8 +123,15 @@ Visual design rules — this must look like a real, modern SaaS product, not an 
 10. Typography should have clear hierarchy — a distinct weight/size for screen titles vs. section labels vs. body/table text vs. muted metadata (timestamps, IDs). Use Tailwind's font-weight and text-size utilities consistently rather than uniform text throughout.
 11. Respect basic accessibility even at mockup fidelity: visible focus states on interactive elements (don't strip default focus rings without replacing them), sufficient contrast between text and background, readable font sizes (avoid anything below text-sm for primary content).
 
+Functional wiring — every interactive element must actually work, not just look clickable:
+12. "Add" must open a modal/dialog (controlled by a useState boolean, e.g. isAddOpen) with controlled form inputs (value + onChange, not uncontrolled refs). On submit: call e.preventDefault(), construct a new object from the form state, append it to the relevant list via its setState updater (e.g. setItems(prev => [...prev, newItem])), close the modal, and reset the form fields. The new row must appear in the list immediately, with no reload.
+13. "Edit" must open the same modal pattern, pre-filled with the selected row's current values (set form state from the clicked row before opening). On submit, replace that item in place in the array (match by an id field, setItems(prev => prev.map(i => i.id === editingId ? updated : i))), not append a duplicate.
+14. "Delete" must remove the item from the array immediately (setItems(prev => prev.filter(i => i.id !== targetId))). A window.confirm() before deleting is acceptable and encouraged for destructive actions — this is the one place a native browser dialog is fine to use.
+15. Never use window.location.reload(), never rely on remounting the whole app to reflect a change, and never let a <form> element's default submit behavior cause a page navigation — always preventDefault().
+16. Modals must be implemented as an overlay <div> with fixed inset-0 positioning and a semi-transparent backdrop, rendered conditionally based on state — not <dialog> native elements and not a separate route.
+
 Output rules:
-12. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after."""
+17. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after."""
 
 
 # ---------------------------------------------------------------------------

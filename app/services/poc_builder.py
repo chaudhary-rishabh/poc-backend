@@ -1,4 +1,5 @@
 import json
+import random
 from pathlib import Path
 
 from app.schemas.doc_b import DocB
@@ -7,12 +8,40 @@ from app.services.prompts import POC_TEMPLATE_FILL_SYSTEM_PROMPT, build_retry_su
 
 _SKELETON_PATH = Path(__file__).resolve().parent.parent / "templates" / "poc_skeleton.html"
 
+LAYOUT_ARCHETYPES = [
+    "left sidebar navigation with a top bar",
+    "horizontal top tab bar, no sidebar, content fills full width",
+    "split-pane: a list/filter panel on the left, detail panel on the right, no top-level nav at all",
+    "single-column stacked sections with sticky section headers, no persistent nav chrome",
+    "card-grid dashboard as the home view, with screens reached by clicking into a card rather than a nav menu",
+]
+
+MOOD_DIRECTIONS = [
+    "clean and minimal, generous whitespace, low visual weight",
+    "dense and data-forward, compact rows, information-dense tables",
+    "warm and approachable, soft surfaces, rounded everything",
+    "crisp and structured, sharper edges, clear grid lines",
+]
+
+
+def build_poc_user_content(skeleton_html: str, doc_b_json: str) -> str:
+    layout = random.choice(LAYOUT_ARCHETYPES)
+    mood = random.choice(MOOD_DIRECTIONS)
+    design_direction = (
+        f"Design direction for this generation (follow exactly, do not default to a "
+        f"left-sidebar admin-panel layout unless it's the one chosen below):\n"
+        f"- Layout: {layout}\n"
+        f"- Mood: {mood}\n"
+        f"- Derive the accent color from the business domain below, not from a fixed default."
+    )
+    return f"{design_direction}\n\nSKELETON:\n{skeleton_html}\n\nDOC B:\n{doc_b_json}"
+
 
 async def build_poc_html(provider: LLMProvider, doc_b: DocB) -> str:
     skeleton = _SKELETON_PATH.read_text(encoding="utf-8")
     doc_b_json = json.dumps(doc_b.model_dump())
 
-    user_content = f"SKELETON:\n{skeleton}\n\nDOC B:\n{doc_b_json}"
+    user_content = build_poc_user_content(skeleton, doc_b_json)
 
     max_tokens = 16000
 
