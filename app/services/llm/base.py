@@ -6,7 +6,7 @@ class LLMGenerationError(Exception):
 
 
 class LLMProvider(Protocol):
-    async def complete(self, system_prompt: str, user_content: str) -> str:
+    async def complete(self, system_prompt: str, user_content: str, max_tokens: int = 4096) -> str:
         """Call the model and return its raw text response. No JSON parsing or
         validation here — that's shared across providers in doc_generation.py."""
         ...

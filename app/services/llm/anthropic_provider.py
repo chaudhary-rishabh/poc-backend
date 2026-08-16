@@ -9,11 +9,6 @@ from app.core.config import settings
 from app.services.llm.base import LLMGenerationError
 from app.services.prompts import SCREENSHOT_VISION_SYSTEM_PROMPT
 
-_JSON_ONLY_INSTRUCTION = (
-    "\n\nReturn ONLY raw JSON matching the required schema. "
-    "No markdown code fences, no preamble, no explanation — JSON only."
-)
-
 _MODEL = "claude-sonnet-4-5"
 
 
@@ -23,13 +18,12 @@ class AnthropicProvider:
         http_client = httpx.AsyncClient(verify=ssl_context)
         self._client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY, http_client=http_client)
 
-    async def complete(self, system_prompt: str, user_content: str) -> str:
-        system = system_prompt + _JSON_ONLY_INSTRUCTION
+    async def complete(self, system_prompt: str, user_content: str, max_tokens: int = 4096) -> str:
         try:
             response = await self._client.messages.create(
                 model=_MODEL,
-                max_tokens=4096,
-                system=system,
+                max_tokens=max_tokens,
+                system=system_prompt,
                 messages=[{"role": "user", "content": user_content}],
             )
         except Exception as e:
