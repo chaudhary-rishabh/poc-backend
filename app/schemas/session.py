@@ -56,3 +56,15 @@ class SessionResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class SessionSummary(BaseModel):
+    id: uuid.UUID
+    name: str | None
+    created_at: datetime
+    doc_a_status: str | None
+    has_doc_b: bool
+    has_doc_c: bool
+    has_poc: bool
+
+    model_config = {"from_attributes": True}
