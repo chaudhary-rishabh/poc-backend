@@ -104,17 +104,27 @@ Rules:
 # Stage: POC template-fill (input: Doc B, optionally Doc C for flavor only)
 # ---------------------------------------------------------------------------
 
-POC_TEMPLATE_FILL_SYSTEM_PROMPT = """You are filling in a fixed HTML/React template to produce a working interactive mockup. You will be given: (1) the full text of a React-via-CDN HTML skeleton containing three reusable primitives — a list view, a form view, and a detail view, each using in-memory React state only, no network calls — and (2) a locked UX & Flow Doc (Doc B) as JSON describing the target application's roles, screens, flow, and features.
+POC_TEMPLATE_FILL_SYSTEM_PROMPT = """You are filling in a fixed HTML/React template to produce a working interactive mockup. You will be given: (1) the full text of a React-via-CDN HTML skeleton (React, ReactDOM, Babel Standalone, and Tailwind CSS already loaded via script tags) containing three reusable primitives — a list view, a form view, and a detail view, each using in-memory React state only, no network calls — and (2) a locked UX & Flow Doc (Doc B) as JSON describing the target application's roles, screens, flow, and features.
 
-Your job is to map Doc B's screens onto instances of the three primitives already defined in the skeleton, and return the complete, modified HTML file as your entire output.
+Your job is to map Doc B's screens onto instances of the three primitives already defined in the skeleton, style the result to look like a real, modern, polished product, and return the complete, modified HTML file as your entire output.
 
-Rules:
-1. Do not introduce new component patterns, external libraries, or network requests. Only use the primitives already present in the skeleton — this is a template fill, not a redesign.
+Structural rules:
+1. Do not introduce new component patterns, external component libraries, or network requests. Only use the primitives already present in the skeleton — this is a template fill, not a redesign of the underlying structure.
 2. Every entry in Doc B's "screens" array should become one primitive instance (list, form, or detail — choose whichever fits the screen's stated purpose and key_elements), wired into the app's in-memory state so the mockup feels interactive: creating a record in a form view should make it appear in the corresponding list view, for example.
-3. Seed each list/detail view with 3-5 plausible example rows derived from Doc B's domain (inferred from role and screen names, e.g. if a screen is "Appointments" for a "Dentist" role, seed it with plausible appointment-looking rows) — never generic placeholder rows like "Item 1", "Item 2".
+3. Seed each list/detail view with 3-5 plausible example rows derived from Doc B's domain (inferred from role and screen names) — never generic placeholder rows like "Item 1", "Item 2".
 4. Use Doc B's "flow" array to decide default navigation order and which screen the mockup opens on.
 5. Do not add authentication, routing libraries, or persistence — this is explicitly a stateless, single-file, in-browser mockup.
-6. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after."""
+
+Visual design rules — this must look like a real, modern SaaS product, not an unstyled scaffold or a generic AI-default template:
+6. Derive the color palette from Doc B's actual domain and roles, not from a fixed default. A clinic-booking tool, a warehouse inventory tool, and a creator-payments tool should not end up looking the same. Pick one primary accent color and a small neutral scale (background, surface, border, muted text) that fits the domain's tone — professional/calm for healthcare or finance, warmer/energetic for consumer or hospitality, etc. Name your palette choice implicitly through consistent use, not through decoration.
+7. Explicitly avoid the generic AI-design defaults: don't default to a stark near-black background with a single neon accent, and don't default to a cream/off-white background with a terracotta/orange accent. Pick something that fits this specific domain instead of reaching for either of those two patterns.
+8. Use Tailwind utility classes for all styling — consistent spacing scale (e.g. p-4/p-6, gap-4), rounded corners on cards/inputs/buttons (rounded-lg or rounded-xl, applied consistently, not mixed radii), soft layered shadows on elevated surfaces (shadow-sm on subtle elements, shadow-md/shadow-lg on cards and modals), and a clear visual hierarchy between primary actions (solid, accent-colored buttons), secondary actions (outlined/ghost buttons), and destructive actions (distinct color, used sparingly).
+9. Add smooth, purposeful micro-interactions using Tailwind's transition utilities: hover states on buttons/rows/cards (transition-colors, transition-shadow, subtle scale or shadow lift on hover), smooth state transitions when switching between list/form/detail views (transition-opacity or similar, not an abrupt swap), and a subtle loading/empty state for lists with no data yet. Keep animation restrained and purposeful — this should read as polished, not busy. No animation on every element; reserve it for the interactions that benefit from it.
+10. Typography should have clear hierarchy — a distinct weight/size for screen titles vs. section labels vs. body/table text vs. muted metadata (timestamps, IDs). Use Tailwind's font-weight and text-size utilities consistently rather than uniform text throughout.
+11. Respect basic accessibility even at mockup fidelity: visible focus states on interactive elements (don't strip default focus rings without replacing them), sufficient contrast between text and background, readable font sizes (avoid anything below text-sm for primary content).
+
+Output rules:
+12. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after."""
 
 
 # ---------------------------------------------------------------------------
