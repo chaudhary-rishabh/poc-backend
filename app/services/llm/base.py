@@ -1,8 +1,4 @@
-from typing import Protocol, TypeVar
-
-from pydantic import BaseModel
-
-T = TypeVar("T", bound=BaseModel)
+from typing import Protocol
 
 
 class LLMGenerationError(Exception):
@@ -10,6 +6,9 @@ class LLMGenerationError(Exception):
 
 
 class LLMProvider(Protocol):
-    async def generate_structured(self, system_prompt: str, user_content: str, response_model: type[T]) -> T: ...
+    async def complete(self, system_prompt: str, user_content: str) -> str:
+        """Call the model and return its raw text response. No JSON parsing or
+        validation here — that's shared across providers in doc_generation.py."""
+        ...
 
     async def describe_image(self, image_bytes: bytes, mime_type: str) -> str: ...
