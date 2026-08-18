@@ -13,7 +13,12 @@ router = APIRouter()
 
 
 async def regenerate_poc(
-    session: Session, provider_name: str | None, feedback: str | None, db: AsyncSession
+    session: Session,
+    provider_name: str | None,
+    feedback: str | None,
+    db: AsyncSession,
+    model: str | None = None,
+    effort: str | None = None,
 ) -> PocResponse:
     """Shared regeneration path for the POC, used by /generate/poc and the
     /session/{id}/chat dispatcher."""
@@ -25,12 +30,14 @@ async def regenerate_poc(
     current_poc_html = session.poc_html if feedback else None
 
     try:
-        html = await build_poc_html(provider, doc_b, feedback, current_poc_html)
+        html = await build_poc_html(provider, doc_b, feedback, current_poc_html, model, effort)
     except LLMGenerationError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
 
     session.poc_html = html
     session.provider = provider_name or session.provider
+    session.model = model or session.model
+    session.effort = effort or session.effort
     await db.commit()
 
     return PocResponse(html=html)
@@ -41,4 +48,6 @@ async def generate_poc(payload: ProviderRequest, db: AsyncSession = Depends(get_
     session = await db.get(Session, payload.session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
-    return await regenerate_poc(session, payload.provider, payload.feedback, db)
+    return await regenerate_poc(
+        session, payload.provider, payload.feedback, db, payload.model, payload.effort
+    )

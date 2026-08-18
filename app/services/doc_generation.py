@@ -41,6 +41,8 @@ async def generate_and_validate(
     provider: LLMProvider,
     feedback: str | None = None,
     current_version: dict | None = None,
+    model: str | None = None,
+    effort: str | None = None,
 ) -> BaseModel:
     """Shared call+validate+retry-once path for every doc generation stage.
 
@@ -50,13 +52,13 @@ async def generate_and_validate(
     LLMGenerationError — the route layer turns that into a 502.
     """
     user_content = _append_feedback(user_content, feedback, current_version)
-    raw = await provider.complete(system_prompt, user_content)
+    raw = await provider.complete(system_prompt, user_content, model=model, effort=effort)
 
     try:
         return response_model.model_validate(_parse_json(raw))
     except (ValidationError, json.JSONDecodeError) as e:
         retry_content = user_content + build_retry_suffix(str(e))
-        raw_retry = await provider.complete(system_prompt, retry_content)
+        raw_retry = await provider.complete(system_prompt, retry_content, model=model, effort=effort)
         try:
             return response_model.model_validate(_parse_json(raw_retry))
         except (ValidationError, json.JSONDecodeError) as e2:
@@ -77,25 +79,39 @@ async def generate_doc_a(
     combined_text: str,
     feedback: str | None = None,
     current_doc_a: dict | None = None,
+    model: str | None = None,
+    effort: str | None = None,
 ) -> DocA:
     return await generate_and_validate(
-        DOC_A_SYSTEM_PROMPT, combined_text, DocA, provider, feedback, current_doc_a
+        DOC_A_SYSTEM_PROMPT, combined_text, DocA, provider, feedback, current_doc_a, model, effort
     )
 
 
-async def generate_doc_b(provider: LLMProvider, session: Session, feedback: str | None = None) -> DocB:
+async def generate_doc_b(
+    provider: LLMProvider,
+    session: Session,
+    feedback: str | None = None,
+    model: str | None = None,
+    effort: str | None = None,
+) -> DocB:
     user_content = json.dumps(session.doc_a)
     current_doc_b = session.doc_b if feedback else None
     return await generate_and_validate(
-        DOC_B_SYSTEM_PROMPT, user_content, DocB, provider, feedback, current_doc_b
+        DOC_B_SYSTEM_PROMPT, user_content, DocB, provider, feedback, current_doc_b, model, effort
     )
 
 
-async def generate_doc_c(provider: LLMProvider, session: Session, feedback: str | None = None) -> DocC:
+async def generate_doc_c(
+    provider: LLMProvider,
+    session: Session,
+    feedback: str | None = None,
+    model: str | None = None,
+    effort: str | None = None,
+) -> DocC:
     user_content = json.dumps({"doc_a": session.doc_a, "doc_b": session.doc_b})
     current_doc_c = session.doc_c if feedback else None
     return await generate_and_validate(
-        DOC_C_SYSTEM_PROMPT, user_content, DocC, provider, feedback, current_doc_c
+        DOC_C_SYSTEM_PROMPT, user_content, DocC, provider, feedback, current_doc_c, model, effort
     )
 
 

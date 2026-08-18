@@ -1,4 +1,5 @@
 import base64
+import logging
 import ssl
 
 import httpx
@@ -6,10 +7,14 @@ import truststore
 from anthropic import AsyncAnthropic
 
 from app.core.config import settings
+from app.core.model_registry import default_model, model_supports_effort
 from app.services.llm.base import LLMGenerationError
 from app.services.prompts import SCREENSHOT_VISION_SYSTEM_PROMPT
 
-_MODEL = "claude-sonnet-4-5"
+_PROVIDER_NAME = "anthropic"
+_DEFAULT_EFFORT = "medium"
+
+logger = logging.getLogger(__name__)
 
 
 class AnthropicProvider:
@@ -18,13 +23,26 @@ class AnthropicProvider:
         http_client = httpx.AsyncClient(verify=ssl_context)
         self._client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY, http_client=http_client)
 
-    async def complete(self, system_prompt: str, user_content: str, max_tokens: int = 4096) -> str:
+    async def complete(
+        self,
+        system_prompt: str,
+        user_content: str,
+        max_tokens: int = 4096,
+        model: str | None = None,
+        effort: str | None = None,
+    ) -> str:
+        resolved_model = model or default_model(_PROVIDER_NAME)
+        create_kwargs = {}
+        if model_supports_effort(_PROVIDER_NAME, resolved_model):
+            create_kwargs["output_config"] = {"effort": effort or _DEFAULT_EFFORT}
+        logger.info("Anthropic call: model=%s effort=%s", resolved_model, create_kwargs.get("output_config"))
         try:
             response = await self._client.messages.create(
-                model=_MODEL,
+                model=resolved_model,
                 max_tokens=max_tokens,
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_content}],
+                **create_kwargs,
             )
         except Exception as e:
             raise LLMGenerationError(f"Anthropic API call failed: {e}") from e
@@ -34,7 +52,7 @@ class AnthropicProvider:
         b64 = base64.b64encode(image_bytes).decode("utf-8")
         try:
             response = await self._client.messages.create(
-                model=_MODEL,
+                model=default_model(_PROVIDER_NAME),
                 max_tokens=1024,
                 system=SCREENSHOT_VISION_SYSTEM_PROMPT,
                 messages=[

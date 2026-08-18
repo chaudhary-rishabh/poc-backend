@@ -15,6 +15,8 @@ class Session(Base):
     name: Mapped[str | None] = mapped_column(Text, nullable=True)
     combined_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider: Mapped[str | None] = mapped_column(Text, nullable=True)
+    model: Mapped[str | None] = mapped_column(Text, nullable=True)
+    effort: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     doc_a: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     doc_a_status: Mapped[str | None] = mapped_column(Text, nullable=True)

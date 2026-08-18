@@ -84,6 +84,8 @@ async def build_poc_html(
     doc_b: DocB,
     feedback: str | None = None,
     current_poc_html: str | None = None,
+    model: str | None = None,
+    effort: str | None = None,
 ) -> str:
     skeleton = _SKELETON_PATH.read_text(encoding="utf-8")
     doc_b_json = json.dumps(doc_b.model_dump())
@@ -92,7 +94,9 @@ async def build_poc_html(
 
     max_tokens = 16000
 
-    html = await provider.complete(POC_TEMPLATE_FILL_SYSTEM_PROMPT, user_content, max_tokens=max_tokens)
+    html = await provider.complete(
+        POC_TEMPLATE_FILL_SYSTEM_PROMPT, user_content, max_tokens=max_tokens, model=model, effort=effort
+    )
     html = _strip_markdown_fence(html)
 
     if not _looks_like_valid_html(html):
@@ -101,7 +105,9 @@ async def build_poc_html(
             "mount call. Return the complete HTML file only, starting with <!DOCTYPE html> and "
             "ending with </html>."
         )
-        html = await provider.complete(POC_TEMPLATE_FILL_SYSTEM_PROMPT, retry_content, max_tokens=max_tokens)
+        html = await provider.complete(
+            POC_TEMPLATE_FILL_SYSTEM_PROMPT, retry_content, max_tokens=max_tokens, model=model, effort=effort
+        )
         html = _strip_markdown_fence(html)
         if not _looks_like_valid_html(html):
             raise LLMGenerationError("POC template-fill failed validation after retry: malformed HTML output.")

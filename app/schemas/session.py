@@ -9,12 +9,15 @@ from app.schemas.doc_b import DocB
 from app.schemas.doc_c import DocC
 
 Provider = Literal["anthropic", "deepseek"]
+Effort = Literal["low", "medium", "high"]
 
 
 class ProviderRequest(BaseModel):
     session_id: uuid.UUID
     provider: Provider | None = None
     feedback: str | None = None
+    model: str | None = None
+    effort: Effort | None = None
 
 
 class ApproveDocARequest(BaseModel):
@@ -22,12 +25,16 @@ class ApproveDocARequest(BaseModel):
     action: Literal["approve", "regenerate"]
     provider: Provider | None = None
     feedback: str | None = None
+    model: str | None = None
+    effort: Effort | None = None
 
 
 class ChatRequest(BaseModel):
     message: str
     target_doc: Literal["doc_a", "doc_b", "doc_c", "poc"]
     provider: Provider | None = None
+    model: str | None = None
+    effort: Effort | None = None
 
 
 class RenameSessionRequest(BaseModel):
@@ -61,6 +68,8 @@ class SessionResponse(BaseModel):
     name: str | None
     combined_text: str | None
     provider: str | None
+    model: str | None
+    effort: str | None
     doc_a: DocA | None
     doc_a_status: str | None
     doc_b: DocB | None

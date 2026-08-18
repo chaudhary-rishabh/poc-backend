@@ -85,13 +85,21 @@ async def chat(session_id: uuid.UUID, payload: ChatRequest, db: AsyncSession = D
     if payload.target_doc == "doc_a":
         if session.doc_a is None:
             raise HTTPException(status_code=400, detail="No draft Doc A exists for this session yet.")
-        return await regenerate_doc_a(session, payload.provider, payload.message, db)
+        return await regenerate_doc_a(
+            session, payload.provider, payload.message, db, payload.model, payload.effort
+        )
 
     if payload.target_doc == "doc_b":
-        return await regenerate_doc_b(session, payload.provider, payload.message, db)
+        return await regenerate_doc_b(
+            session, payload.provider, payload.message, db, payload.model, payload.effort
+        )
 
     if payload.target_doc == "doc_c":
-        return await regenerate_doc_c(session, payload.provider, payload.message, db)
+        return await regenerate_doc_c(
+            session, payload.provider, payload.message, db, payload.model, payload.effort
+        )
 
     # target_doc == "poc"
-    return await regenerate_poc(session, payload.provider, payload.message, db)
+    return await regenerate_poc(
+        session, payload.provider, payload.message, db, payload.model, payload.effort
+    )
