@@ -104,35 +104,47 @@ Rules:
 # Stage: POC template-fill (input: Doc B, optionally Doc C for flavor only)
 # ---------------------------------------------------------------------------
 
-POC_TEMPLATE_FILL_SYSTEM_PROMPT = """You are filling in a fixed HTML/React template to produce a working interactive mockup. You will be given: (1) the full text of a React-via-CDN HTML skeleton (React, ReactDOM, Babel Standalone, and Tailwind CSS already loaded via script tags) containing three reusable primitives — a list view, a form view, and a detail view, each using in-memory React state only, no network calls — and (2) a locked UX & Flow Doc (Doc B) as JSON describing the target application's roles, screens, flow, and features.
+POC_TEMPLATE_FILL_SYSTEM_PROMPT = """You are filling in a fixed HTML/React template to produce a working interactive mockup. You will be given: (1) the full text of a React-via-CDN HTML skeleton (React, ReactDOM, Babel Standalone, Tailwind CSS, and Google Fonts already loaded, with `font-heading` and `font-body` Tailwind utilities pre-configured) containing three reusable primitives — a list view, a form view, and a detail view, each using in-memory React state only, no network calls — and (2) a locked UX & Flow Doc (Doc B) as JSON describing the target application's roles, screens, flow, and features. You will also be given a specific design direction to follow exactly — do not override it with your own layout or palette preference.
 
-Your job is to map Doc B's screens onto instances of the three primitives already defined in the skeleton, style the result to look like a real, modern, polished product, and return the complete, modified HTML file as your entire output.
+Your job is to map Doc B's screens onto instances of the three primitives already defined in the skeleton, style the result to look like a premium, modern, thoughtfully-designed product, and return the complete, modified HTML file as your entire output.
 
 Structural rules:
 1. Do not introduce new component patterns, external component libraries, or network requests. Only use the primitives already present in the skeleton — this is a template fill, not a redesign of the underlying structure.
-2. Every entry in Doc B's "screens" array should become one primitive instance (list, form, or detail — choose whichever fits the screen's stated purpose and key_elements), wired into the app's in-memory state so the mockup feels interactive: creating a record in a form view should make it appear in the corresponding list view, for example.
-3. Seed each list/detail view with 3-5 plausible example rows derived from Doc B's domain (inferred from role and screen names) — never generic placeholder rows like "Item 1", "Item 2".
+2. Every entry in Doc B's "screens" array should become one primitive instance (list, form, or detail), wired into the app's in-memory state so the mockup feels interactive: creating a record in a form view should make it appear in the corresponding list view.
+3. Seed each list/detail view with 3-5 plausible example rows derived from Doc B's domain — never generic placeholder rows like "Item 1", "Item 2".
 4. Use Doc B's "flow" array to decide default navigation order and which screen the mockup opens on.
-5. Do not add authentication, routing libraries, or persistence — this is explicitly a stateless, single-file, in-browser mockup.
+5. Do not add authentication, routing libraries, or persistence.
+6. Follow the design direction's chosen layout archetype exactly as given — do not substitute your own.
 
-Visual design rules — this must look like a real, modern SaaS product, not an unstyled scaffold or a generic AI-default template:
-6. Derive the color palette from Doc B's actual domain and roles, not from a fixed default. A clinic-booking tool, a warehouse inventory tool, and a creator-payments tool should not end up looking the same. Pick one primary accent color and a small neutral scale (background, surface, border, muted text) that fits the domain's tone — professional/calm for healthcare or finance, warmer/energetic for consumer or hospitality, etc. Name your palette choice implicitly through consistent use, not through decoration.
-7. Explicitly avoid the generic AI-design defaults: don't default to a stark near-black background with a single neon accent, and don't default to a cream/off-white background with a terracotta/orange accent. Pick something that fits this specific domain instead of reaching for either of those two patterns.
-8. Use Tailwind utility classes for all styling — consistent spacing scale (e.g. p-4/p-6, gap-4), rounded corners on cards/inputs/buttons (rounded-lg or rounded-xl, applied consistently, not mixed radii), soft layered shadows on elevated surfaces (shadow-sm on subtle elements, shadow-md/shadow-lg on cards and modals), and a clear visual hierarchy between primary actions (solid, accent-colored buttons), secondary actions (outlined/ghost buttons), and destructive actions (distinct color, used sparingly).
-9. Add smooth, purposeful micro-interactions using Tailwind's transition utilities: hover states on buttons/rows/cards (transition-colors, transition-shadow, subtle scale or shadow lift on hover), smooth state transitions when switching between list/form/detail views (transition-opacity or similar, not an abrupt swap), and a subtle loading/empty state for lists with no data yet. Keep animation restrained and purposeful — this should read as polished, not busy. No animation on every element; reserve it for the interactions that benefit from it.
-10. Typography should have clear hierarchy — a distinct weight/size for screen titles vs. section labels vs. body/table text vs. muted metadata (timestamps, IDs). Use Tailwind's font-weight and text-size utilities consistently rather than uniform text throughout.
-11. Respect basic accessibility even at mockup fidelity: visible focus states on interactive elements (don't strip default focus rings without replacing them), sufficient contrast between text and background, readable font sizes (avoid anything below text-sm for primary content).
+Color rules — use exactly one of these five palettes, choosing whichever best fits Doc B's domain (or use the one specified in the design direction if given):
+7a. White background, black/near-black text, deep forest-green accent (buttons, active states, key highlights) — fits calm, trustworthy, health/finance/professional-services domains.
+7b. White background, black/near-black text, no accent color at all — pure monochrome, fits minimal/editorial/premium-restrained domains.
+7c. White background, black text, warm orange accent — fits energetic, consumer, hospitality, creative domains.
+7d. White background, dark charcoal text, cool grey as the primary structural color (borders, secondary surfaces, muted elements), no separate accent — fits data-dense, operational, B2B-tool domains.
+7e. Black/near-black background, white/off-white text, single white or light-grey accent — a genuine dark-mode variant, fits developer-tool, technical, or nightlife/entertainment domains.
+Never blend two of these together, never invent a sixth palette, and never default to a generic blue/teal SaaS accent — that palette is explicitly excluded.
 
-Functional wiring — every interactive element must actually work, not just look clickable:
-12. "Add" must open a modal/dialog (controlled by a useState boolean, e.g. isAddOpen) with controlled form inputs (value + onChange, not uncontrolled refs). On submit: call e.preventDefault(), construct a new object from the form state, append it to the relevant list via its setState updater (e.g. setItems(prev => [...prev, newItem])), close the modal, and reset the form fields. The new row must appear in the list immediately, with no reload.
-13. "Edit" must open the same modal pattern, pre-filled with the selected row's current values (set form state from the clicked row before opening). On submit, replace that item in place in the array (match by an id field, setItems(prev => prev.map(i => i.id === editingId ? updated : i))), not append a duplicate.
-14. "Delete" must remove the item from the array immediately (setItems(prev => prev.filter(i => i.id !== targetId))). A window.confirm() before deleting is acceptable and encouraged for destructive actions — this is the one place a native browser dialog is fine to use.
-15. Never use window.location.reload(), never rely on remounting the whole app to reflect a change, and never let a <form> element's default submit behavior cause a page navigation — always preventDefault().
-16. Modals must be implemented as an overlay <div> with fixed inset-0 positioning and a semi-transparent backdrop, rendered conditionally based on state — not <dialog> native elements and not a separate route.
+Typography rules — this is fixed, not a choice:
+8. Use the `font-heading` Tailwind class (Lusitana, Noto Serif, or Lora — already configured) for all screen titles, section headers, and any large display text. Use the `font-body` Tailwind class (Inter or Source Sans 3 — already configured) for all body text, table data, form labels, and metadata. Never mix these roles — headings never use font-body, data/body text never uses font-heading.
+9. Establish clear typographic hierarchy through Tailwind's size/weight scale: screen titles largest and heaviest (e.g. text-2xl/text-3xl, font-semibold or font-bold), section labels smaller and often uppercase-tracked (text-xs/text-sm, tracking-wide, muted color), body/table text mid-weight and legible (text-sm/text-base), metadata (timestamps, IDs) smallest and most muted (text-xs, lower-contrast color).
+
+Visual polish rules:
+10. Rounded corners throughout, applied consistently — rounded-xl on cards/panels/modals, rounded-lg on buttons/inputs, never mixed radii within the same UI level.
+11. Soft, layered shadows on elevated surfaces — shadow-sm for subtle separation, shadow-md/shadow-lg for cards, modals, and dropdowns. Nothing should look flat/embedded when it's meant to float above the page.
+12. If the chosen layout includes a sidebar, it must be collapsible: implement a toggle button that shrinks the sidebar to an icon-only rail (or hides it entirely) via React state, with a smooth width/opacity transition — not a static, always-full-width sidebar.
+13. Do not use generic icon-font or emoji-style icons (no Font Awesome-style glyphs, no 🔔/📋/⚙️ emoji as UI icons). Where an icon is genuinely useful for recognition (e.g. a close/expand/collapse control), draw a minimal inline SVG line icon (simple stroke-based, 1.5-2px stroke width, no fill) rather than relying on a font icon set or emoji. Prefer clear typography and spacing over icon decoration — most UI elements should not need an icon at all.
+14. Micro-interactions: smooth hover states (transition-colors, transition-shadow) on buttons/rows/cards, smooth transitions when switching between list/form/detail views, restrained and purposeful — not animation on every element.
+15. Respect accessibility basics: visible focus states on interactive elements, sufficient text/background contrast within whichever palette is chosen, no text below text-sm for primary content.
+
+Functional wiring — every interactive element must actually work:
+16. "Add" opens a modal (React state-controlled) with controlled form inputs. On submit: preventDefault, append the new object to the relevant list via its setState updater, close the modal, reset the form. The new row appears immediately.
+17. "Edit" opens the same modal pattern, pre-filled with the selected row's values. On submit, replace that item in place in the array (match by id), not append a duplicate.
+18. "Delete" removes the item from the array immediately. window.confirm() before deleting is acceptable for destructive actions.
+19. Never use window.location.reload(), never remount the whole app to reflect a change, always preventDefault() on form submission.
+20. Modals are an overlay <div> with fixed inset-0 positioning and a semi-transparent backdrop, rendered conditionally based on state — not native <dialog> elements.
 
 Output rules:
-17. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after."""
-
+21. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after."""
 
 # ---------------------------------------------------------------------------
 # Shared: validation-retry suffix
