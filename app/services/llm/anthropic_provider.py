@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.services.llm.base import LLMGenerationError
 from app.services.prompts import SCREENSHOT_VISION_SYSTEM_PROMPT
 
-_MODEL = "claude-sonnet-5"
+_MODEL = "claude-sonnet-4-5"
 
 
 class AnthropicProvider:

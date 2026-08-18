@@ -3,7 +3,7 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 from app.services.llm.base import LLMGenerationError
 
-_MODEL = "deepseek-v4-pro"
+_MODEL = "deepseek-chat"
 
 
 class DeepSeekProvider:
