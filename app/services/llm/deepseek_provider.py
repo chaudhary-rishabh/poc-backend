@@ -15,12 +15,18 @@ _DEFAULT_EFFORT = "medium"
 # map explicitly rather than rely on that fallback.
 _EFFORT_MAP = {"low": "low", "medium": "high", "high": "max"}
 
+_REQUEST_TIMEOUT_SECONDS = 900.0
+
 logger = logging.getLogger(__name__)
 
 
 class DeepSeekProvider:
     def __init__(self) -> None:
-        self._client = AsyncOpenAI(base_url="https://api.deepseek.com", api_key=settings.DEEPSEEK_API_KEY)
+        self._client = AsyncOpenAI(
+            base_url="https://api.deepseek.com",
+            api_key=settings.DEEPSEEK_API_KEY,
+            timeout=_REQUEST_TIMEOUT_SECONDS,
+        )
 
     async def complete(
         self,

@@ -14,14 +14,20 @@ from app.services.prompts import SCREENSHOT_VISION_SYSTEM_PROMPT
 _PROVIDER_NAME = "anthropic"
 _DEFAULT_EFFORT = "medium"
 
+_REQUEST_TIMEOUT_SECONDS = 900.0
+
 logger = logging.getLogger(__name__)
 
 
 class AnthropicProvider:
     def __init__(self) -> None:
         ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        http_client = httpx.AsyncClient(verify=ssl_context)
-        self._client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY, http_client=http_client)
+        http_client = httpx.AsyncClient(verify=ssl_context, timeout=_REQUEST_TIMEOUT_SECONDS)
+        self._client = AsyncAnthropic(
+            api_key=settings.ANTHROPIC_API_KEY,
+            http_client=http_client,
+            timeout=_REQUEST_TIMEOUT_SECONDS,
+        )
 
     async def complete(
         self,
