@@ -28,33 +28,67 @@ HEADING_FONTS = ["Lusitana", "Noto Serif", "Lora"]
 BODY_FONTS = ["Inter", "Source Sans 3"]
 
 
-def build_poc_user_content(skeleton_html: str, doc_b_json: str) -> str:
-    layout = random.choice(LAYOUT_ARCHETYPES)
-    palette = random.choice(PALETTE_DIRECTIONS)
-    heading_font = random.choice(HEADING_FONTS)
-    body_font = random.choice(BODY_FONTS)
+def build_poc_user_content(
+    skeleton_html: str,
+    doc_b_json: str,
+    feedback: str | None = None,
+    current_poc_html: str | None = None,
+) -> str:
+    if current_poc_html:
+        # Regenerating from feedback: keep the existing design direction stable
+        # rather than re-rolling it, so the output stays a revision, not a redo.
+        design_direction = (
+            f"Design direction for this generation: preserve the layout, palette, and fonts "
+            f"already used in the CURRENT VERSION below exactly as they are — this is a revision, "
+            f"not a fresh design.\n"
+            f"- If the layout includes a sidebar, it must remain collapsible via a real toggle.\n"
+            f"- No emoji or icon-font glyphs — minimal inline SVG line icons only, used sparingly."
+        )
+    else:
+        layout = random.choice(LAYOUT_ARCHETYPES)
+        palette = random.choice(PALETTE_DIRECTIONS)
+        heading_font = random.choice(HEADING_FONTS)
+        body_font = random.choice(BODY_FONTS)
 
-    design_direction = (
-        f"Design direction for this generation (follow exactly):\n"
-        f"- Layout: {layout}\n"
-        f"- Palette: {palette} — use this palette unless Doc B's domain strongly suggests a "
-        f"better fit among the five approved palettes in your system prompt; if so, prefer the "
-        f"domain-appropriate one instead.\n"
-        f"- Heading font: use `font-heading` for all titles/headers, which resolves to {heading_font} "
-        f"(already loaded).\n"
-        f"- Body font: use `font-body` for all body/data text, which resolves to {body_font} "
-        f"(already loaded).\n"
-        f"- If the layout includes a sidebar, it must be collapsible via a real toggle.\n"
-        f"- No emoji or icon-font glyphs — minimal inline SVG line icons only, used sparingly."
-    )
-    return f"{design_direction}\n\nSKELETON:\n{skeleton_html}\n\nDOC B:\n{doc_b_json}"
+        design_direction = (
+            f"Design direction for this generation (follow exactly):\n"
+            f"- Layout: {layout}\n"
+            f"- Palette: {palette} — use this palette unless Doc B's domain strongly suggests a "
+            f"better fit among the five approved palettes in your system prompt; if so, prefer the "
+            f"domain-appropriate one instead.\n"
+            f"- Heading font: use `font-heading` for all titles/headers, which resolves to {heading_font} "
+            f"(already loaded).\n"
+            f"- Body font: use `font-body` for all body/data text, which resolves to {body_font} "
+            f"(already loaded).\n"
+            f"- If the layout includes a sidebar, it must be collapsible via a real toggle.\n"
+            f"- No emoji or icon-font glyphs — minimal inline SVG line icons only, used sparingly."
+        )
+
+    user_content = f"{design_direction}\n\nSKELETON:\n{skeleton_html}\n\nDOC B:\n{doc_b_json}"
+
+    if current_poc_html:
+        user_content += (
+            f"\n\nCURRENT VERSION (this is the baseline to revise, not a fresh input to ignore):\n"
+            f"{current_poc_html}"
+        )
+    if feedback:
+        user_content += (
+            f"\n\nUSER FEEDBACK (required correction — apply it directly to the current version above):\n"
+            f"{feedback}"
+        )
+    return user_content
 
 
-async def build_poc_html(provider: LLMProvider, doc_b: DocB) -> str:
+async def build_poc_html(
+    provider: LLMProvider,
+    doc_b: DocB,
+    feedback: str | None = None,
+    current_poc_html: str | None = None,
+) -> str:
     skeleton = _SKELETON_PATH.read_text(encoding="utf-8")
     doc_b_json = json.dumps(doc_b.model_dump())
 
-    user_content = build_poc_user_content(skeleton, doc_b_json)
+    user_content = build_poc_user_content(skeleton, doc_b_json, feedback, current_poc_html)
 
     max_tokens = 16000
 

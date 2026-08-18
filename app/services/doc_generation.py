@@ -15,11 +15,31 @@ from app.services.prompts import (
 )
 
 
+def _append_feedback(
+    user_content: str, feedback: str | None, current_version: dict | None = None
+) -> str:
+    if not feedback:
+        return user_content
+    if current_version is not None:
+        current_version_json = json.dumps(current_version)
+        user_content += (
+            f"\n\nCURRENT VERSION (this is the baseline to revise, not a fresh input to ignore):\n"
+            f"{current_version_json}"
+        )
+    user_content += (
+        f"\n\nUSER FEEDBACK (required correction — apply it directly to the current version above):\n"
+        f"{feedback}"
+    )
+    return user_content
+
+
 async def generate_and_validate(
     system_prompt: str,
     user_content: str,
     response_model: type[BaseModel],
     provider: LLMProvider,
+    feedback: str | None = None,
+    current_version: dict | None = None,
 ) -> BaseModel:
     """Shared call+validate+retry-once path for every doc generation stage.
 
@@ -28,6 +48,7 @@ async def generate_and_validate(
     appended via build_retry_suffix(). If the retry also fails, raises
     LLMGenerationError — the route layer turns that into a 502.
     """
+    user_content = _append_feedback(user_content, feedback, current_version)
     raw = await provider.complete(system_prompt, user_content)
 
     try:
@@ -50,15 +71,28 @@ def _parse_json(raw: str):
     return json.loads(cleaned.strip())
 
 
-async def generate_doc_a(provider: LLMProvider, combined_text: str) -> DocA:
-    return await generate_and_validate(DOC_A_SYSTEM_PROMPT, combined_text, DocA, provider)
+async def generate_doc_a(
+    provider: LLMProvider,
+    combined_text: str,
+    feedback: str | None = None,
+    current_doc_a: dict | None = None,
+) -> DocA:
+    return await generate_and_validate(
+        DOC_A_SYSTEM_PROMPT, combined_text, DocA, provider, feedback, current_doc_a
+    )
 
 
-async def generate_doc_b(provider: LLMProvider, session: Session) -> DocB:
+async def generate_doc_b(provider: LLMProvider, session: Session, feedback: str | None = None) -> DocB:
     user_content = json.dumps(session.doc_a)
-    return await generate_and_validate(DOC_B_SYSTEM_PROMPT, user_content, DocB, provider)
+    current_doc_b = session.doc_b if feedback else None
+    return await generate_and_validate(
+        DOC_B_SYSTEM_PROMPT, user_content, DocB, provider, feedback, current_doc_b
+    )
 
 
-async def generate_doc_c(provider: LLMProvider, session: Session) -> DocC:
+async def generate_doc_c(provider: LLMProvider, session: Session, feedback: str | None = None) -> DocC:
     user_content = json.dumps({"doc_a": session.doc_a, "doc_b": session.doc_b})
-    return await generate_and_validate(DOC_C_SYSTEM_PROMPT, user_content, DocC, provider)
+    current_doc_c = session.doc_c if feedback else None
+    return await generate_and_validate(
+        DOC_C_SYSTEM_PROMPT, user_content, DocC, provider, feedback, current_doc_c
+    )

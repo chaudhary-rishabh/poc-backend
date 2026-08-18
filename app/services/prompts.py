@@ -48,7 +48,9 @@ Rules you must follow exactly:
 4. If the combined input is too sparse or off-topic to determine a real business goal, do not fabricate a plausible-sounding one. Instead, state in "goal" that the input is insufficient to determine a clear objective, and use "missing_info" to list what would be needed.
 5. Cross-reference sources against each other. If one source contradicts another (e.g. a transcript says one thing and a WhatsApp message shows different behavior), surface that contradiction explicitly, either as a pain point (if it reflects a real operational problem) or in missing_info (if it's just unclear which is accurate).
 6. "proposed_process" must be practical and scoped to what a small-to-mid consulting engagement could realistically deliver — not a sweeping vision, and not a list of framework names. Describe how work would actually flow.
-7. Output must parse as valid JSON with exactly the five fields above. No extra fields, no nested markdown, no trailing commentary."""
+7. Output must parse as valid JSON with exactly the five fields above. No extra fields, no nested markdown, no trailing commentary.
+8. If user feedback on a previous version is included in the input, it is a required correction, not an optional suggestion. Directly reflect it in the relevant fields of your output — do not merely acknowledge it in prose, and do not ignore it in favor of your own default interpretation. Everything else about the original instructions still applies; the feedback adjusts the output, it does not replace these rules.
+9. When a CURRENT VERSION is provided in the input, treat it as the baseline you are editing, not something to regenerate from scratch. Preserve everything the feedback does not address, and change only what the feedback specifies. A request like "remove X" must result in X being absent from the corresponding field in your output, with everything else unchanged from the current version. Only produce a fully fresh version if the feedback explicitly asks for a complete redo."""
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +63,7 @@ Return ONLY a raw JSON object with exactly these fields — no markdown code fen
 
 {
   "roles": [{"name": "<string>", "description": "<string: what this role does and needs from the system>"}],
-  "screens": [{"name": "<string>", "purpose": "<string>", "key_elements": ["<string>", "..."]}],
+  "screens": [{"name": "<string>", "purpose": "<string>", "key_elements": ["<string>", "..."], "visible_to_roles": ["<string>", "..."]}],
   "flow": ["<string>", "..."],
   "features": ["<string>", "..."]
 }
@@ -73,7 +75,12 @@ Rules:
 4. "flow" must be an ordered sequence describing how a user moves through the screens to accomplish the core goal from Doc A — each entry should reference a screen by the exact name used in "screens", so the sequence is traceable.
 5. "features" should map directly to items in Doc A's pain_points and proposed_process — each pain point that the proposed process addresses should have a corresponding feature; don't add unrelated features "because they're common in this kind of app."
 6. If Doc A's missing_info suggests something is unresolved (e.g. "unclear if online payment is wanted"), do not silently decide it for them — design around the ambiguity (e.g. omit that feature, or note in a screen's key_elements that it's a placeholder pending clarification) rather than guessing a firm answer.
-7. Output must parse as valid JSON with exactly the four fields above. No extra fields, no trailing commentary."""
+7. Output must parse as valid JSON with exactly the four fields above. No extra fields, no trailing commentary.
+8. If user feedback on a previous version is included in the input, it is a required correction, not an optional suggestion. Directly reflect it in the relevant fields of your output — do not merely acknowledge it in prose, and do not ignore it in favor of your own default interpretation. Everything else about the original instructions still applies; the feedback adjusts the output, it does not replace these rules.
+9. When a CURRENT VERSION is provided in the input, treat it as the baseline you are editing, not something to regenerate from scratch. Preserve everything the feedback does not address, and change only what the feedback specifies. A request like "remove X" must result in X being absent from the corresponding field in your output, with everything else unchanged from the current version. Only produce a fully fresh version if the feedback explicitly asks for a complete redo.
+10. Every screen must include a visible_to_roles field listing which of the roles array's role names can access it, using the exact role name strings from roles — not paraphrased.
+11. Before finalizing "roles", explicitly re-read Doc A's "goal" and "current_process" and identify every named class of person the business ultimately serves or transacts with (e.g. "students", "customers", "patients", "guests", "members", "buyers", "diners") — even when Doc A discusses that group only briefly, only as a downstream beneficiary, or only in passing (e.g. "so students don't complain"), and even when the discovery material's pain points are entirely about internal operations. If such a group exists, it is a required role, not optional: add it to "roles" and give it at least one screen in "screens" covering its core interaction with the product (e.g. a "Student" role needs a screen to browse/view/consume what they're paying for — courses, appointments, orders — not just an internal admin view of them). Do not limit "roles" to only the internal staff roles Doc A's pain_points happen to focus on. A discovery report about internal operational pain points almost always still implies an external party the operations exist to serve; find that party and design for it too.
+12. If Doc A's context implies a distinct top-level oversight role (e.g. a platform admin, superadmin, or owner who can see across all other roles), include one, with visible_to_roles access to a cross-role summary/oversight screen, not just their own siloed screens."""
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +104,9 @@ Rules:
 3. "api_routes" should be the minimum CRUD-plus-domain-logic set needed to support Doc B's flow — standard REST conventions (GET list, GET one, POST, PUT/PATCH, DELETE) plus any clearly domain-specific routes (e.g. a conflict-check route if double-booking prevention was a stated feature).
 4. "folder_structure" should be brief — a representative tree a few levels deep, not a file-by-file listing.
 5. Where Doc A's missing_info leaves a requirement unresolved, don't over-commit the schema to one interpretation — keep the affected part of the schema minimal/generic rather than guessing specifics that weren't asked for.
-6. Output must parse as valid JSON with exactly the four fields above. No extra fields, no trailing commentary."""
+6. Output must parse as valid JSON with exactly the four fields above. No extra fields, no trailing commentary.
+7. If user feedback on a previous version is included in the input, it is a required correction, not an optional suggestion. Directly reflect it in the relevant fields of your output — do not merely acknowledge it in prose, and do not ignore it in favor of your own default interpretation. Everything else about the original instructions still applies; the feedback adjusts the output, it does not replace these rules.
+8. When a CURRENT VERSION is provided in the input, treat it as the baseline you are editing, not something to regenerate from scratch. Preserve everything the feedback does not address, and change only what the feedback specifies. A request like "remove X" must result in X being absent from the corresponding field in your output, with everything else unchanged from the current version. Only produce a fully fresh version if the feedback explicitly asks for a complete redo."""
 
 
 # ---------------------------------------------------------------------------
@@ -143,8 +152,16 @@ Functional wiring — every interactive element must actually work:
 19. Never use window.location.reload(), never remount the whole app to reflect a change, always preventDefault() on form submission.
 20. Modals are an overlay <div> with fixed inset-0 positioning and a semi-transparent backdrop, rendered conditionally based on state — not native <dialog> elements.
 
+Role-based visibility — the role selector must actually work:
+21. The role selector must be functional, not decorative: when the user changes the selected role, the visible navigation items and screens must actually change to only those whose visible_to_roles (from Doc B) includes the currently selected role. Implement this with real conditional rendering driven by React state — filter SCREENS by visible_to_roles.includes(currentRole) before rendering nav items, and default the active screen to the first one visible to the initially selected role.
+22. If Doc B includes a superadmin/admin-equivalent role, that role's view should be visually distinct enough to signal broader oversight (e.g. an additional summary/overview screen, or visible access to more nav items than other roles) — not merely the same screens with a different label.
+
 Output rules:
-21. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after."""
+23. Return only the complete HTML file content, starting with the opening tag of the skeleton and ending with its closing tag. No explanation, no markdown fences, no commentary before or after.
+
+Feedback and revision rules:
+24. If user feedback on a previous version is included in the input, it is a required correction, not an optional suggestion. Directly reflect it in the returned HTML — do not merely acknowledge it and do not ignore it in favor of your own default interpretation.
+25. When a CURRENT VERSION is provided in the input, treat it as the baseline you are editing, not something to regenerate from scratch. Preserve everything the feedback does not address — same screens, same data, same layout and palette choices already made — and change only what the feedback specifies. A request like "remove X" must result in X being absent from the returned HTML, with everything else unchanged from the current version. Only produce a fully fresh version if the feedback explicitly asks for a complete redo."""
 
 # ---------------------------------------------------------------------------
 # Shared: validation-retry suffix

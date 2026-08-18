@@ -14,11 +14,19 @@ Provider = Literal["anthropic", "deepseek"]
 class ProviderRequest(BaseModel):
     session_id: uuid.UUID
     provider: Provider | None = None
+    feedback: str | None = None
 
 
 class ApproveDocARequest(BaseModel):
     session_id: uuid.UUID
     action: Literal["approve", "regenerate"]
+    provider: Provider | None = None
+    feedback: str | None = None
+
+
+class ChatRequest(BaseModel):
+    message: str
+    target_doc: Literal["doc_a", "doc_b", "doc_c", "poc"]
     provider: Provider | None = None
 
 
@@ -31,11 +39,13 @@ class DocAResponse(BaseModel):
 class DocBResponse(BaseModel):
     session_id: uuid.UUID
     doc_b: DocB
+    stale_downstream: list[str] = []
 
 
 class DocCResponse(BaseModel):
     session_id: uuid.UUID
     doc_c: DocC
+    stale_downstream: list[str] = []
 
 
 class PocResponse(BaseModel):

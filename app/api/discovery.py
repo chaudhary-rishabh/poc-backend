@@ -26,13 +26,37 @@ async def discovery(payload: ProviderRequest, db: AsyncSession = Depends(get_db)
 
     provider = get_provider(payload.provider)
     try:
-        doc_a = await generate_doc_a(provider, session.combined_text)
+        doc_a = await generate_doc_a(provider, session.combined_text, payload.feedback)
     except LLMGenerationError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
 
     session.doc_a = doc_a.model_dump()
     session.doc_a_status = "draft"
     session.provider = payload.provider or session.provider
+    await db.commit()
+    await db.refresh(session)
+
+    return DocAResponse(session_id=session.id, doc_a=doc_a, doc_a_status="draft")
+
+
+async def regenerate_doc_a(
+    session: Session, provider_name: str | None, feedback: str | None, db: AsyncSession
+) -> DocAResponse:
+    """Shared regeneration path for Doc A, used by /approve/doc-a (action=regenerate)
+    and the /session/{id}/chat dispatcher."""
+    if not session.combined_text:
+        raise HTTPException(status_code=400, detail="Session has no ingested content to analyze.")
+
+    provider = get_provider(provider_name)
+    current_doc_a = session.doc_a if feedback else None
+    try:
+        doc_a = await generate_doc_a(provider, session.combined_text, feedback, current_doc_a)
+    except LLMGenerationError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    session.doc_a = doc_a.model_dump()
+    session.doc_a_status = "draft"
+    session.provider = provider_name or session.provider
     await db.commit()
     await db.refresh(session)
 
@@ -56,19 +80,4 @@ async def approve_doc_a(payload: ApproveDocARequest, db: AsyncSession = Depends(
         return DocAResponse(session_id=session.id, doc_a=session.doc_a, doc_a_status="locked")
 
     # action == "regenerate"
-    if not session.combined_text:
-        raise HTTPException(status_code=400, detail="Session has no ingested content to analyze.")
-
-    provider = get_provider(payload.provider)
-    try:
-        doc_a = await generate_doc_a(provider, session.combined_text)
-    except LLMGenerationError as e:
-        raise HTTPException(status_code=502, detail=str(e)) from e
-
-    session.doc_a = doc_a.model_dump()
-    session.doc_a_status = "draft"
-    session.provider = payload.provider or session.provider
-    await db.commit()
-    await db.refresh(session)
-
-    return DocAResponse(session_id=session.id, doc_a=doc_a, doc_a_status="draft")
+    return await regenerate_doc_a(session, payload.provider, payload.feedback, db)

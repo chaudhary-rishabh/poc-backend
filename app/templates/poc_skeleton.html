@@ -38,7 +38,9 @@ const { useState } = React;
 /* __ROLES__ */
 const ROLES = __ROLES_JSON__;
 
-/* __SCREENS__ */
+/* __SCREENS__ — each screen has a visible_to_roles: string[] field naming which
+   ROLES entries can see it. Nav and routing below MUST filter by this, not just
+   display it — the role selector is a real access filter, not decoration. */
 const SCREENS = __SCREENS_JSON__;
 
 /* __FEATURES__ */
@@ -111,19 +113,38 @@ function screenComponent(screen, index) {
 }
 
 function App() {
-  const [activeIndex, setActiveIndex] = useState(0);
   const [role, setRole] = useState(ROLES[0]?.name || "");
-  const activeScreen = SCREENS[activeIndex] || { name: "No screens", purpose: "", key_elements: [] };
+
+  // Real access filter, not decoration: only screens whose visible_to_roles
+  // includes the current role are ever rendered in nav or as the active screen.
+  const visibleScreens = SCREENS.filter((s) => (s.visible_to_roles || []).includes(role));
+
+  const [activeName, setActiveName] = useState(visibleScreens[0]?.name);
+
+  // If switching role drops the previously active screen out of view,
+  // fall back to the first screen the new role can actually see.
+  const activeScreen =
+    visibleScreens.find((s) => s.name === activeName) ||
+    visibleScreens[0] ||
+    { name: "No screens available for this role", purpose: "", key_elements: [] };
+
+  function handleRoleChange(nextRole) {
+    setRole(nextRole);
+    const nextVisible = SCREENS.filter((s) => (s.visible_to_roles || []).includes(nextRole));
+    setActiveName(nextVisible[0]?.name);
+  }
+
+  const activeIndex = SCREENS.findIndex((s) => s.name === activeScreen.name);
 
   return (
     <div>
       <div>
         <h1>__APP_TITLE__</h1>
         <nav>
-          {SCREENS.map((s, i) => (
+          {visibleScreens.map((s) => (
             <a
               key={s.name}
-              onClick={() => setActiveIndex(i)}
+              onClick={() => setActiveName(s.name)}
             >
               {s.name}
             </a>
@@ -133,7 +154,7 @@ function App() {
       <div>
         <div>
           Role:{" "}
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <select value={role} onChange={(e) => handleRoleChange(e.target.value)}>
             {ROLES.map((r) => (
               <option key={r.name} value={r.name}>{r.name}</option>
             ))}

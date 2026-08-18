@@ -10,6 +10,7 @@ class Screen(BaseModel):
     name: str
     purpose: str
     key_elements: list[str]
+    visible_to_roles: list[str] = []
 
 
 class DocB(BaseModel):
