@@ -30,6 +30,10 @@ class ChatRequest(BaseModel):
     provider: Provider | None = None
 
 
+class RenameSessionRequest(BaseModel):
+    name: str
+
+
 class DocAResponse(BaseModel):
     session_id: uuid.UUID
     doc_a: DocA

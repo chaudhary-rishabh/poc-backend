@@ -11,6 +11,7 @@ from app.services.prompts import (
     DOC_A_SYSTEM_PROMPT,
     DOC_B_SYSTEM_PROMPT,
     DOC_C_SYSTEM_PROMPT,
+    SESSION_TITLE_SYSTEM_PROMPT,
     build_retry_suffix,
 )
 
@@ -96,3 +97,10 @@ async def generate_doc_c(provider: LLMProvider, session: Session, feedback: str 
     return await generate_and_validate(
         DOC_C_SYSTEM_PROMPT, user_content, DocC, provider, feedback, current_doc_c
     )
+
+
+async def generate_session_title(provider: LLMProvider, combined_text: str) -> str:
+    """Short auto-generated session name from the first bit of raw input —
+    just enough signal to name the session, not the full text."""
+    title = await provider.complete(SESSION_TITLE_SYSTEM_PROMPT, combined_text[:4000], max_tokens=30)
+    return title.strip().strip('"').strip("'")[:80]

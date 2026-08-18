@@ -9,7 +9,7 @@ from app.api.docs import regenerate_doc_b, regenerate_doc_c
 from app.api.poc import regenerate_poc
 from app.core.db import get_db
 from app.models.session import Session
-from app.schemas.session import ChatRequest, SessionResponse, SessionSummary
+from app.schemas.session import ChatRequest, RenameSessionRequest, SessionResponse, SessionSummary
 
 router = APIRouter()
 
@@ -47,6 +47,19 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     session = await db.get(Session, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
+    return session
+
+
+@router.patch("/session/{session_id}", response_model=SessionResponse)
+async def rename_session(
+    session_id: uuid.UUID, payload: RenameSessionRequest, db: AsyncSession = Depends(get_db)
+):
+    session = await db.get(Session, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    session.name = payload.name
+    await db.commit()
+    await db.refresh(session)
     return session
 
 

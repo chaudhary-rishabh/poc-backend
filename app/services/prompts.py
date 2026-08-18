@@ -26,6 +26,19 @@ Rules:
 
 
 # ---------------------------------------------------------------------------
+# Stage: Session title generation (input: raw combined_text, truncated)
+# ---------------------------------------------------------------------------
+
+SESSION_TITLE_SYSTEM_PROMPT = """You generate a short, descriptive title for a business discovery session based on raw client input text. Return ONLY the title as plain text — no quotes, no markdown, no explanation, no trailing punctuation.
+
+Rules:
+- 3 to 6 words.
+- Name the business/client and the core subject if identifiable (e.g. "Bright Smile Dental — Booking System", "LearnForge Course Review Process"). If a specific business name isn't clearly stated in the text, describe the domain and problem instead (e.g. "Property Management Maintenance Requests").
+- Do not use generic titles like "Discovery Session" or "Business Analysis" — it must be specific enough to distinguish this session from a different one in a list.
+- Plain text only, title case."""
+
+
+# ---------------------------------------------------------------------------
 # Stage: Doc A — Discovery Report
 # ---------------------------------------------------------------------------
 
