@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,3 +45,13 @@ async def get_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
+
+
+@router.delete("/session/{session_id}", status_code=204)
+async def delete_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    session = await db.get(Session, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    await db.delete(session)
+    await db.commit()
+    return Response(status_code=204)
